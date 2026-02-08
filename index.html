@@ -115,6 +115,13 @@
           <input id="hpName" type="text" placeholder="例：Sony WF-1000XM5" />
           <div class="hint">廠牌+型號</div>
         </div>
+
+        <div class="field">
+          <label for="reviewerName">測評者（選填）</label>
+          <input id="reviewerName" type="text" placeholder="例：五塊 / 阿貴 / 來賓" />
+          <div class="hint">多人一起聽的時候很好用，匯出/分享也會帶著。</div>
+        </div>
+
         <div class="field">
           <label for="testDate">測試日期</label>
           <input id="testDate" type="date" />
@@ -158,14 +165,15 @@
       <div class="canvas-wrap">
         <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap">
           <div style="font-weight:650">雷達圖預覽</div>
-          <div class="mini">說明：下載的圖會含標題＋日期＋六角分數</div>
+          <div class="mini">下載的圖會含標題＋日期＋六角分數</div>
         </div>
 
         <canvas id="radar" width="900" height="900" aria-label="雷達圖"></canvas>
 
         <div class="mini">
           標準曲目時間軸（黃金六角）：<br/>
-          00:00 解析力｜05:02 保真感｜08:48 低音感｜13:27 震撼力</div>
+          00:00 解析力｜05:02 保真感｜08:48 低音感｜13:27 震撼力
+        </div>
 
         <div class="mini">標準曲目影片（內嵌播放）：</div>
         <div style="border:1px solid rgba(36,48,72,.85); border-radius:14px; overflow:hidden; background:#0c1020">
@@ -220,6 +228,7 @@
 
   const state = {
     hpName: "",
+    reviewerName: "",
     testDate: "",
     oneLiner: "",
     scores: Object.fromEntries(GOLDEN_HEX.map(x=>[x.key, 7]))
@@ -262,6 +271,7 @@
       const obj = JSON.parse(b64urlDecode(payload));
       if(obj && obj.scores){
         state.hpName = String(obj.hpName||"");
+        state.reviewerName = String(obj.reviewerName||"");
         state.testDate = String(obj.testDate||todayISO());
         state.oneLiner = String(obj.oneLiner||"");
         for(const k of Object.keys(state.scores)){
@@ -272,15 +282,6 @@
       }
     }catch(e){}
     return false;
-  }
-
-  function writeToURL(){
-    const obj = packData();
-    const encoded = b64urlEncode(JSON.stringify(obj));
-    const url = new URL(location.href);
-    url.searchParams.set("d", encoded);
-    history.replaceState(null, "", url.toString());
-    return url.toString();
   }
 
   const LS_KEY = "golden_hex_v1";
@@ -294,6 +295,7 @@
       const obj = JSON.parse(raw);
       if(!obj || !obj.scores) return false;
       state.hpName = String(obj.hpName||"");
+      state.reviewerName = String(obj.reviewerName||"");
       state.testDate = String(obj.testDate||todayISO());
       state.oneLiner = String(obj.oneLiner||"");
       for(const k of Object.keys(state.scores)){
@@ -339,6 +341,11 @@
   function bindBasicFields(){
     $("#hpName").addEventListener("input",(e)=>{
       state.hpName = e.target.value;
+      saveLocal();
+      drawRadar();
+    });
+    $("#reviewerName").addEventListener("input",(e)=>{
+      state.reviewerName = e.target.value;
       saveLocal();
       drawRadar();
     });
@@ -427,6 +434,8 @@
     // 標題（自動換行，避免壓到副標）
     const title = (state.hpName || "（請輸入耳機型號）").trim();
     const date = (state.testDate || todayISO());
+    const who = (state.reviewerName || "").trim();
+    const whoText = who ? `｜測評者：${who}` : "";
 
     const titleMaxWidth = W - 160;
     const titleLineHeight = 44;
@@ -445,7 +454,7 @@
     const subtitleY = titleStartY + titleLines.length * titleLineHeight + 6;
     ctx.fillStyle = "rgba(154,164,178,.95)";
     ctx.font = "500 18px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
-    ctx.fillText(`測試日期：${date}｜黃金六角雷達圖`, cx, subtitleY);
+    ctx.fillText(`測試日期：${date}${whoText}｜黃金六角雷達圖`, cx, subtitleY);
 
     // 網格
     const rings = 5;
@@ -466,7 +475,7 @@
       ctx.stroke();
     }
 
-    // 標籤（避免切邊：字小一點 + 位置拉回畫布內）
+    // 標籤（避免切邊）
     ctx.fillStyle = "rgba(231,237,245,.95)";
     ctx.font = "650 20px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
 
@@ -535,7 +544,7 @@
       const boxW = W - 120;
       const boxH = 120;
       const bx = (W - boxW)/2;
-      const by = H - boxH - 74; // 往上挪，留底部給網址
+      const by = H - boxH - 74;
 
       roundRect(ctx, bx, by, boxW, boxH, 18, "rgba(18,22,35,.65)", "rgba(36,48,72,.85)");
       ctx.fillStyle = "rgba(154,164,178,.95)";
@@ -548,7 +557,8 @@
       ctx.font = "500 20px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
       wrapText(ctx, one, bx+18, by+44, boxW-36, 28, 3);
     }
-// 浮水印
+
+    // 浮水印
     ctx.fillStyle = "rgba(154,164,178,.55)";
     ctx.font = "500 16px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
     ctx.textAlign = "right";
@@ -588,11 +598,31 @@
     return {
       version: "golden-hex-v1",
       hpName: (state.hpName||"").trim(),
+      reviewerName: (state.reviewerName||"").trim(),
       testDate: (state.testDate||todayISO()),
       oneLiner: (state.oneLiner||"").trim(),
       scores: {...state.scores},
       createdAt: new Date().toISOString()
     };
+  }
+
+  function packDataForShare(){
+    return {
+      version: "golden-hex-v1",
+      hpName: (state.hpName||"").trim(),
+      reviewerName: (state.reviewerName||"").trim(),
+      testDate: (state.testDate||todayISO()),
+      oneLiner: (state.oneLiner||"").trim(),
+      scores: {...state.scores}
+    };
+  }
+
+  function writeToURL(){
+    const encoded = b64urlEncode(JSON.stringify(packDataForShare()));
+    const url = new URL(location.href);
+    url.searchParams.set("d", encoded);
+    history.replaceState(null, "", url.toString());
+    return url.toString();
   }
 
   function downloadBlob(filename, blob){
@@ -609,79 +639,12 @@
     return name.replace(/[\\/:*?"<>|]+/g,"_").trim().slice(0,80) || "headphone";
   }
 
-  function packDataForShare(){
-    // 分享只放必要資訊，網址不會太肥
-    return {
-      version: "golden-hex-v1",
-      hpName: (state.hpName||"").trim(),
-      testDate: (state.testDate||todayISO()),
-      oneLiner: (state.oneLiner||"").trim(),
-      scores: {...state.scores}
-    };
-  }
-
-  function writeToURL(){
-    const encoded = b64urlEncode(JSON.stringify(packDataForShare()));
-    const url = new URL(location.href);
-    url.searchParams.set("d", encoded);
-    history.replaceState(null, "", url.toString());
-    return url.toString();
-  }
-
-  function renderItems(){
-    const wrap = $("#items");
-    wrap.innerHTML = "";
-    GOLDEN_HEX.forEach((it, idx)=>{
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <div class="item-top">
-          <div>
-            <div class="name">${idx+1}. ${it.title}</div>
-            <div class="hint">${it.sub}</div>
-          </div>
-          <div class="val"><span id="val-${it.key}">${state.scores[it.key]}</span> / 10</div>
-        </div>
-        <input type="range" min="1" max="10" step="1" value="${state.scores[it.key]}" data-key="${it.key}" aria-label="${it.title}分數" />
-        <div class="hint">${it.tip}</div>
-      `;
-      wrap.appendChild(div);
-    });
-
-    wrap.querySelectorAll('input[type="range"]').forEach(r=>{
-      r.addEventListener("input", (e)=>{
-        const key = e.target.getAttribute("data-key");
-        state.scores[key] = clamp(Number(e.target.value),1,10);
-        const val = document.getElementById(`val-${key}`);
-        if(val) val.textContent = state.scores[key];
-        saveLocal();
-        drawRadar();
-      });
-    });
-  }
-
-  function bindBasicFields(){
-    $("#hpName").addEventListener("input",(e)=>{
-      state.hpName = e.target.value;
-      saveLocal();
-      drawRadar();
-    });
-    $("#testDate").addEventListener("change",(e)=>{
-      state.testDate = e.target.value || todayISO();
-      saveLocal();
-      drawRadar();
-    });
-    $("#oneLiner").addEventListener("input",(e)=>{
-      state.oneLiner = e.target.value;
-      saveLocal();
-      drawRadar();
-    });
-  }
-
   function syncUIFromState(){
     $("#hpName").value = state.hpName;
+    $("#reviewerName").value = state.reviewerName || "";
     $("#testDate").value = state.testDate || todayISO();
     $("#oneLiner").value = state.oneLiner;
+
     GOLDEN_HEX.forEach(it=>{
       const slider = document.querySelector(`input[type="range"][data-key="${it.key}"]`);
       if(slider) slider.value = state.scores[it.key];
@@ -710,7 +673,9 @@
       drawRadar();
       const canvas = $("#radar");
       canvas.toBlob((blob)=>{
-        const fname = `${safeFileName(state.hpName)}_黃金六角_${state.testDate || todayISO()}.png`;
+        const who = (state.reviewerName||"").trim();
+        const whoTag = who ? `_${safeFileName(who)}` : "";
+        const fname = `${safeFileName(state.hpName)}${whoTag}_黃金六角_${state.testDate || todayISO()}.png`;
         downloadBlob(fname, blob);
         toast("已下載 PNG 圖片");
       }, "image/png");
@@ -735,7 +700,9 @@
       const data = packData();
       const json = JSON.stringify(data, null, 2);
       const blob = new Blob([json], {type:"application/json;charset=utf-8"});
-      const fname = `${safeFileName(state.hpName || "耳機")}_黃金六角_${state.testDate || todayISO()}.json`;
+      const who = (state.reviewerName||"").trim();
+      const whoTag = who ? `_${safeFileName(who)}` : "";
+      const fname = `${safeFileName(state.hpName || "耳機")}${whoTag}_黃金六角_${state.testDate || todayISO()}.json`;
       downloadBlob(fname, blob);
       toast("已下載 JSON 評測檔");
     });
@@ -753,12 +720,15 @@
           return;
         }
         state.hpName = String(obj.hpName||"");
+        state.reviewerName = String(obj.reviewerName||"");
         state.testDate = String(obj.testDate||todayISO());
         state.oneLiner = String(obj.oneLiner||"");
+
         for(const k of Object.keys(state.scores)){
           const v = Number(obj.scores[k]);
           if(Number.isFinite(v)) state.scores[k] = clamp(v,1,10);
         }
+
         syncUIFromState();
         saveLocal();
         writeToURL();
@@ -774,6 +744,7 @@
     $("#btnReset").addEventListener("click", ()=>{
       if(!confirm("確定要清空嗎？")) return;
       state.hpName = "";
+      state.reviewerName = "";
       state.testDate = todayISO();
       state.oneLiner = "";
       for(const k of Object.keys(state.scores)) state.scores[k] = 7;
@@ -788,7 +759,6 @@
   }
 
   (function init(){
-
     state.testDate = todayISO();
 
     const fromURL = readFromURL();
