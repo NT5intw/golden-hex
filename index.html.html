@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>黃金六角量表｜雷達圖下載</title>
+  <style>
+    :root{
+      --bg:#0b0d12; --card:#121623; --muted:#9aa4b2; --text:#e7edf5;
+      --line:#243048; --accent:#7aa2ff; --danger:#ff6b6b;
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background:linear-gradient(180deg, #0b0d12 0%, #0a0c10 100%);
+      color:var(--text);
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter:saturate(180%) blur(12px);
+      background:rgba(11,13,18,.72);
+      border-bottom:1px solid rgba(36,48,72,.55);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    main.wrap{padding-bottom:28px}
+    .title{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap}
+    h1{font-size:18px;margin:0}
+    .badge{font-size:12px;color:var(--muted);border:1px solid rgba(154,164,178,.3);padding:2px 8px;border-radius:999px}
+    .grid{display:grid; grid-template-columns: 1fr; gap:14px}
+    @media(min-width:900px){ .grid{grid-template-columns: 1.1fr .9fr} }
+    .card{
+      background:rgba(18,22,35,.86);
+      border:1px solid rgba(36,48,72,.65);
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .row{display:flex; gap:12px; flex-wrap:wrap}
+    .field{flex:1; min-width:210px}
+    label{display:block; font-size:13px; margin:2px 0 6px}
+    input[type="text"], input[type="date"], textarea{
+      width:100%; border-radius:12px; border:1px solid rgba(36,48,72,.9);
+      background:#0c1020; color:var(--text);
+      padding:10px 12px; outline:none;
+    }
+    textarea{min-height:74px; resize:vertical}
+    .hint{font-size:12px;color:var(--muted); margin-top:6px; line-height:1.35}
+    .subtle{font-size:12px;color:var(--muted); line-height:1.35}
+    .divider{height:1px;background:rgba(36,48,72,.75); margin:12px 0}
+    .scale-hint{
+      font-size:12px;color:var(--muted);
+      padding:8px 10px;border:1px dashed rgba(154,164,178,.25);border-radius:12px;
+      background:rgba(12,16,32,.6);
+      line-height:1.45;
+    }
+    .item{
+      border:1px solid rgba(36,48,72,.7);
+      border-radius:14px; padding:10px 10px; background:rgba(12,16,32,.55);
+      margin:10px 0;
+    }
+    .item-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+    .name{font-weight:650; font-size:14px}
+    .val{font-variant-numeric: tabular-nums; font-size:13px; color:var(--muted); white-space:nowrap}
+    input[type="range"]{width:100%}
+    .btns{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      border:1px solid rgba(36,48,72,.85);
+      background:linear-gradient(180deg, rgba(122,162,255,.20), rgba(122,162,255,.06));
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-size:14px;
+    }
+    button.secondary{ background:rgba(12,16,32,.6); }
+    button.danger{
+      border-color:rgba(255,107,107,.55);
+      background:linear-gradient(180deg, rgba(255,107,107,.18), rgba(255,107,107,.06));
+    }
+    button:active{transform:translateY(1px)}
+    .canvas-wrap{display:grid; gap:10px}
+    canvas{width:100%; height:auto; background:#0c1020; border-radius:14px; border:1px solid rgba(36,48,72,.85)}
+    .mini{font-size:12px;color:var(--muted); line-height:1.55}
+    .toast{
+      display:none;
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:rgba(18,22,35,.95); border:1px solid rgba(36,48,72,.85);
+      padding:10px 12px; border-radius:14px; color:var(--text); font-size:13px;
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
+      max-width:92vw;
+    }
+    .toast.show{display:block}
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="title">
+      <h1>黃金六角量表（可下載雷達圖）</h1>
+      <span class="badge">黃金六角</span>
+    </div>
+    <div class="subtle">填完分數就能產生雷達圖並下載圖片分享。</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+    <section class="card">
+      <div class="row">
+        <div class="field">
+          <label for="hpName">耳機型號（必填）</label>
+          <input id="hpName" type="text" placeholder="例：Sony WF-1000XM5" />
+          <div class="hint">建議用你影片會講的命名方式，之後比較不會混。</div>
+        </div>
+        <div class="field">
+          <label for="testDate">測試日期</label>
+          <input id="testDate" type="date" />
+          <div class="hint">預設今天；補記錄也可以改成實際聆聽日。</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="scale-hint">
+        <b>分數規則（1～10）</b><br/>
+        1=很差｜5=普通｜7=不錯｜8=明顯好｜9=非常強｜10=同級頂尖
+      </div>
+
+      <div id="items"></div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <div class="field">
+          <label for="oneLiner">一句話結論（選填）</label>
+          <textarea id="oneLiner" placeholder="例：低頻下潛很有感，但定位普通，通勤爽聽型。"></textarea>
+          <div class="hint">你之後拿來當影片重點／貼文摘要會很快。</div>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button id="btnRender">產生/更新圖表</button>
+        <button class="secondary" id="btnDownload">下載 PNG 圖片</button>
+        <button class="secondary" id="btnCopyLink">複製分享連結</button>
+        <button class="secondary" id="btnExport">下載評測檔（JSON）</button>
+        <label style="display:inline-block">
+          <input id="importFile" type="file" accept="application/json" style="display:none" />
+          <button class="secondary" id="btnImport" type="button">匯入評測檔（JSON）</button>
+        </label>
+        <button class="danger" id="btnReset">清空</button>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="canvas-wrap">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap">
+          <div style="font-weight:650">雷達圖預覽</div>
+          <div class="mini">說明：下載的圖會含標題＋日期＋六角分數</div>
+        </div>
+
+        <canvas id="radar" width="900" height="900" aria-label="雷達圖"></canvas>
+
+        <div class="mini">
+          標準曲目時間軸（黃金六角）：<br/>
+          00:00 解析力｜05:02 保真感｜08:48 低音感｜13:27 震撼力</div>
+
+        <div class="mini">標準曲目影片（內嵌播放）：</div>
+        <div style="border:1px solid rgba(36,48,72,.85); border-radius:14px; overflow:hidden; background:#0c1020">
+          <iframe
+            width="100%" height="220"
+            src="https://www.youtube.com/embed/yu53SIR4EjU?si=VZeGkWHgkQxsmAPy"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const YT_URL = "https://www.youtube.com/watch?v=yu53SIR4EjU&list=PLt_WEx4QavbUqNII45zyXXE68-dypGyn2";
+
+  const GOLDEN_HEX = [
+    { key:"解析力", title:"解析力",
+      sub:"還原細節的能力（背景樂器、尾音、微小資訊量）。",
+      tip:"判分提示：9～10=細節多又乾淨｜7～8=主細節清楚｜5～6=糊、資訊少｜1～4=糙刺/悶到聽不清"
+    },
+    { key:"保真感", title:"保真感",
+      sub:"音質失真與人聲真假感（口型、共鳴、自然度）。",
+      tip:"判分提示：9～10=像真人、不扁不破｜7～8=大致自然｜5～6=有染色｜1～4=明顯失真/刺/轟"
+    },
+    { key:"低音感", title:"低音感",
+      sub:"低音Q度與收放速度（鼓點彈性、拖尾、悶不悶）。",
+      tip:"判分提示：9～10=有彈性且收得住｜7～8=快歌略黏｜5～6=低頻悶糊｜1～4=拖尾嚴重成一坨"
+    },
+    { key:"震撼力", title:"震撼力",
+      sub:"低音潛度與衝擊（能不能下去到很低、但不轟）。",
+      tip:"判分提示：9～10=下潛深還有層次｜7～8=有下去但底層薄/糊｜5～6=只有大聲不夠低｜1～4=轟/破/壓聲"
+    },
+    { key:"定位感", title:"定位感",
+      sub:"分辨樂器位置的能力（左右前後、分離、層次）。",
+      tip:"判分提示：9～10=位置很明確｜7～8=複雜時小混｜5～6=畫面感弱｜1～4=全擠一團"
+    },
+    { key:"臨場感", title:"臨場感",
+      sub:"空間感還原力（殘響、遠近、房間感是否自然）。",
+      tip:"判分提示：9～10=空間真、深度好｜7～8=空間有但一般｜5～6=貼臉扁平｜1～4=壓縮假/不舒服"
+    }
+  ];
+
+  const $ = (sel)=>document.querySelector(sel);
+
+  const state = {
+    hpName: "",
+    testDate: "",
+    oneLiner: "",
+    scores: Object.fromEntries(GOLDEN_HEX.map(x=>[x.key, 7]))
+  };
+
+  function todayISO(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  let toastTimer = null;
+  function toast(msg){
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.classList.remove("show"), 2400);
+  }
+
+  function b64urlEncode(str){
+    const b64 = btoa(unescape(encodeURIComponent(str)));
+    return b64.replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
+  }
+  function b64urlDecode(b64url){
+    let b64 = b64url.replaceAll("-","+").replaceAll("_","/");
+    while (b64.length % 4) b64 += "=";
+    return decodeURIComponent(escape(atob(b64)));
+  }
+
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+  function readFromURL(){
+    const p = new URLSearchParams(location.search);
+    const payload = p.get("d");
+    if(!payload) return false;
+    try{
+      const obj = JSON.parse(b64urlDecode(payload));
+      if(obj && obj.scores){
+        state.hpName = String(obj.hpName||"");
+        state.testDate = String(obj.testDate||todayISO());
+        state.oneLiner = String(obj.oneLiner||"");
+        for(const k of Object.keys(state.scores)){
+          const v = Number(obj.scores[k]);
+          if(Number.isFinite(v)) state.scores[k] = clamp(v,1,10);
+        }
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  function writeToURL(){
+    const obj = packData();
+    const encoded = b64urlEncode(JSON.stringify(obj));
+    const url = new URL(location.href);
+    url.searchParams.set("d", encoded);
+    history.replaceState(null, "", url.toString());
+    return url.toString();
+  }
+
+  const LS_KEY = "golden_hex_v1";
+  function saveLocal(){
+    localStorage.setItem(LS_KEY, JSON.stringify(packData()));
+  }
+  function loadLocal(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return false;
+      const obj = JSON.parse(raw);
+      if(!obj || !obj.scores) return false;
+      state.hpName = String(obj.hpName||"");
+      state.testDate = String(obj.testDate||todayISO());
+      state.oneLiner = String(obj.oneLiner||"");
+      for(const k of Object.keys(state.scores)){
+        const v = Number(obj.scores[k]);
+        if(Number.isFinite(v)) state.scores[k] = clamp(v,1,10);
+      }
+      return true;
+    } catch(e){ return false; }
+  }
+
+  function renderItems(){
+    const wrap = $("#items");
+    wrap.innerHTML = "";
+    GOLDEN_HEX.forEach((it, idx)=>{
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="item-top">
+          <div>
+            <div class="name">${idx+1}. ${it.title}</div>
+            <div class="hint">${it.sub}</div>
+          </div>
+          <div class="val"><span id="val-${it.key}">${state.scores[it.key]}</span> / 10</div>
+        </div>
+        <input type="range" min="1" max="10" step="1" value="${state.scores[it.key]}" data-key="${it.key}" aria-label="${it.title}分數" />
+        <div class="hint">${it.tip}</div>
+      `;
+      wrap.appendChild(div);
+    });
+
+    wrap.querySelectorAll('input[type="range"]').forEach(r=>{
+      r.addEventListener("input", (e)=>{
+        const key = e.target.getAttribute("data-key");
+        state.scores[key] = clamp(Number(e.target.value),1,10);
+        const val = document.getElementById(`val-${key}`);
+        if(val) val.textContent = state.scores[key];
+        saveLocal();
+        drawRadar();
+      });
+    });
+  }
+
+  function bindBasicFields(){
+    $("#hpName").addEventListener("input",(e)=>{
+      state.hpName = e.target.value;
+      saveLocal();
+      drawRadar();
+    });
+    $("#testDate").addEventListener("change",(e)=>{
+      state.testDate = e.target.value || todayISO();
+      saveLocal();
+      drawRadar();
+    });
+    $("#oneLiner").addEventListener("input",(e)=>{
+      state.oneLiner = e.target.value;
+      saveLocal();
+      drawRadar();
+    });
+  }
+
+  function splitTextToLines(ctx, text, maxWidth, maxLines){
+    const units = text.split(/\s+/).length > 1 ? text.split(/\s+/) : Array.from(text);
+    const lines = [];
+    let line = "";
+
+    for (let i = 0; i < units.length; i++){
+      const testLine = line + units[i];
+      if (ctx.measureText(testLine).width > maxWidth && line){
+        lines.push(line);
+        line = units[i];
+        if (maxLines && lines.length >= maxLines - 1) break;
+      } else {
+        line = testLine;
+      }
+    }
+    if (line) lines.push(line);
+
+    if (maxLines && lines.length === maxLines){
+      const ell = "…";
+      let last = lines[lines.length - 1];
+      while (ctx.measureText(last + ell).width > maxWidth && last.length > 0){
+        last = last.slice(0, -1);
+      }
+      lines[lines.length - 1] = last + ell;
+    }
+    return lines.slice(0, maxLines || lines.length);
+  }
+
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines){
+    const units = text.split(/\s+/).length > 1 ? text.split(/\s+/) : Array.from(text);
+    let line = "";
+    let lines = 0;
+
+    for(let n=0;n<units.length;n++){
+      const testLine = line + units[n];
+      const w = ctx.measureText(testLine).width;
+      if(w > maxWidth && line){
+        ctx.fillText(line, x, y + lines*lineHeight);
+        lines++;
+        line = units[n];
+        if(maxLines && lines >= maxLines){
+          const ell = "…";
+          let cut = line;
+          while(ctx.measureText(cut + ell).width > maxWidth && cut.length>0){
+            cut = cut.slice(0,-1);
+          }
+          ctx.fillText(cut + ell, x, y + lines*lineHeight);
+          return;
+        }
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, x, y + lines*lineHeight);
+  }
+
+  function drawRadar(){
+    const canvas = $("#radar");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = "#0c1020";
+    ctx.fillRect(0,0,W,H);
+
+    // 留更大邊界給文字，避免切邊
+    const padding = 120;
+    const cx = W/2, cy = H/2 + 55;
+    let R = Math.min(W,H)/2 - padding;
+
+    // 標題（自動換行，避免壓到副標）
+    const title = (state.hpName || "（請輸入耳機型號）").trim();
+    const date = (state.testDate || todayISO());
+
+    const titleMaxWidth = W - 160;
+    const titleLineHeight = 44;
+    const titleStartY = 52;
+
+    ctx.fillStyle = "#e7edf5";
+    ctx.font = "700 34px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+
+    const titleLines = splitTextToLines(ctx, title, titleMaxWidth, 2);
+    titleLines.forEach((line, i)=>{
+      ctx.fillText(line, cx, titleStartY + i * titleLineHeight);
+    });
+
+    const subtitleY = titleStartY + titleLines.length * titleLineHeight + 6;
+    ctx.fillStyle = "rgba(154,164,178,.95)";
+    ctx.font = "500 18px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
+    ctx.fillText(`測試日期：${date}｜黃金六角雷達圖`, cx, subtitleY);
+
+    // 網格
+    const rings = 5;
+    ctx.strokeStyle = "rgba(36,48,72,.85)";
+    ctx.lineWidth = 2;
+
+    for(let i=1;i<=rings;i++){
+      const r = (R * i)/rings;
+      polygon(ctx, cx, cy, r, GOLDEN_HEX.length, -Math.PI/2);
+    }
+
+    // 輻射線
+    for(let i=0;i<GOLDEN_HEX.length;i++){
+      const ang = -Math.PI/2 + (2*Math.PI*i)/GOLDEN_HEX.length;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + R*Math.cos(ang), cy + R*Math.sin(ang));
+      ctx.stroke();
+    }
+
+    // 標籤（避免切邊：字小一點 + 位置拉回畫布內）
+    ctx.fillStyle = "rgba(231,237,245,.95)";
+    ctx.font = "650 20px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
+
+    const labelOffset = 26;
+    const labelPadding = 14;
+
+    GOLDEN_HEX.forEach((it,i)=>{
+      const ang = -Math.PI/2 + (2*Math.PI*i)/GOLDEN_HEX.length;
+
+      let lx = cx + (R + labelOffset) * Math.cos(ang);
+      let ly = cy + (R + labelOffset) * Math.sin(ang);
+
+      ctx.textAlign = (Math.cos(ang) > 0.2) ? "left" : (Math.cos(ang) < -0.2 ? "right" : "center");
+      ctx.textBaseline = (Math.sin(ang) > 0.2) ? "top" : (Math.sin(ang) < -0.2 ? "bottom" : "middle");
+
+      const text = it.title;
+      const w = ctx.measureText(text).width;
+
+      let left = lx, right = lx;
+      if (ctx.textAlign === "left") { left = lx; right = lx + w; }
+      else if (ctx.textAlign === "right") { left = lx - w; right = lx; }
+      else { left = lx - w/2; right = lx + w/2; }
+
+      if (left < labelPadding) lx += (labelPadding - left);
+      if (right > W - labelPadding) lx -= (right - (W - labelPadding));
+      if (ly < labelPadding) ly = labelPadding;
+      if (ly > H - labelPadding) ly = H - labelPadding;
+
+      ctx.fillText(text, lx, ly);
+    });
+
+    // 數值多邊形
+    const points = GOLDEN_HEX.map((it,i)=>{
+      const score = clamp(Number(state.scores[it.key]||1),1,10);
+      const t = score/10;
+      const ang = -Math.PI/2 + (2*Math.PI*i)/GOLDEN_HEX.length;
+      return { x: cx + (R*t)*Math.cos(ang), y: cy + (R*t)*Math.sin(ang), score };
+    });
+
+    ctx.beginPath();
+    points.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+    ctx.closePath();
+    ctx.fillStyle = "rgba(122,162,255,.22)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(122,162,255,.92)";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // 點＋分數
+    points.forEach((p)=>{
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,7,0,Math.PI*2);
+      ctx.fillStyle = "rgba(231,237,245,.95)";
+      ctx.fill();
+
+      ctx.font = "600 18px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
+      ctx.fillStyle = "rgba(231,237,245,.95)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(p.score), p.x, p.y - 18);
+    });
+
+    // 一句話結論（選填）
+    const one = (state.oneLiner || "").trim();
+    if(one){
+      const boxW = W - 120;
+      const boxH = 120;
+      const bx = (W - boxW)/2;
+      const by = H - boxH - 74; // 往上挪，留底部給網址
+
+      roundRect(ctx, bx, by, boxW, boxH, 18, "rgba(18,22,35,.65)", "rgba(36,48,72,.85)");
+      ctx.fillStyle = "rgba(154,164,178,.95)";
+      ctx.font = "650 18px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText("一句話結論", bx+18, by+14);
+
+      ctx.fillStyle = "rgba(231,237,245,.95)";
+      ctx.font = "500 20px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
+      wrapText(ctx, one, bx+18, by+44, boxW-36, 28, 3);
+    }
+// 浮水印
+    ctx.fillStyle = "rgba(154,164,178,.55)";
+    ctx.font = "500 16px system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei'";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("黃金六角量表", W-20, H-16);
+  }
+
+  function polygon(ctx, cx, cy, r, sides, startAng){
+    ctx.beginPath();
+    for(let i=0;i<sides;i++){
+      const ang = startAng + (2*Math.PI*i)/sides;
+      const x = cx + r*Math.cos(ang);
+      const y = cy + r*Math.sin(ang);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function roundRect(ctx, x, y, w, h, r, fillStyle, strokeStyle){
+    const radius = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function packData(){
+    return {
+      version: "golden-hex-v1",
+      hpName: (state.hpName||"").trim(),
+      testDate: (state.testDate||todayISO()),
+      oneLiner: (state.oneLiner||"").trim(),
+      scores: {...state.scores},
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  function downloadBlob(filename, blob){
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+  }
+
+  function safeFileName(name){
+    return name.replace(/[\\/:*?"<>|]+/g,"_").trim().slice(0,80) || "headphone";
+  }
+
+  function packDataForShare(){
+    // 分享只放必要資訊，網址不會太肥
+    return {
+      version: "golden-hex-v1",
+      hpName: (state.hpName||"").trim(),
+      testDate: (state.testDate||todayISO()),
+      oneLiner: (state.oneLiner||"").trim(),
+      scores: {...state.scores}
+    };
+  }
+
+  function writeToURL(){
+    const encoded = b64urlEncode(JSON.stringify(packDataForShare()));
+    const url = new URL(location.href);
+    url.searchParams.set("d", encoded);
+    history.replaceState(null, "", url.toString());
+    return url.toString();
+  }
+
+  function renderItems(){
+    const wrap = $("#items");
+    wrap.innerHTML = "";
+    GOLDEN_HEX.forEach((it, idx)=>{
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="item-top">
+          <div>
+            <div class="name">${idx+1}. ${it.title}</div>
+            <div class="hint">${it.sub}</div>
+          </div>
+          <div class="val"><span id="val-${it.key}">${state.scores[it.key]}</span> / 10</div>
+        </div>
+        <input type="range" min="1" max="10" step="1" value="${state.scores[it.key]}" data-key="${it.key}" aria-label="${it.title}分數" />
+        <div class="hint">${it.tip}</div>
+      `;
+      wrap.appendChild(div);
+    });
+
+    wrap.querySelectorAll('input[type="range"]').forEach(r=>{
+      r.addEventListener("input", (e)=>{
+        const key = e.target.getAttribute("data-key");
+        state.scores[key] = clamp(Number(e.target.value),1,10);
+        const val = document.getElementById(`val-${key}`);
+        if(val) val.textContent = state.scores[key];
+        saveLocal();
+        drawRadar();
+      });
+    });
+  }
+
+  function bindBasicFields(){
+    $("#hpName").addEventListener("input",(e)=>{
+      state.hpName = e.target.value;
+      saveLocal();
+      drawRadar();
+    });
+    $("#testDate").addEventListener("change",(e)=>{
+      state.testDate = e.target.value || todayISO();
+      saveLocal();
+      drawRadar();
+    });
+    $("#oneLiner").addEventListener("input",(e)=>{
+      state.oneLiner = e.target.value;
+      saveLocal();
+      drawRadar();
+    });
+  }
+
+  function syncUIFromState(){
+    $("#hpName").value = state.hpName;
+    $("#testDate").value = state.testDate || todayISO();
+    $("#oneLiner").value = state.oneLiner;
+    GOLDEN_HEX.forEach(it=>{
+      const slider = document.querySelector(`input[type="range"][data-key="${it.key}"]`);
+      if(slider) slider.value = state.scores[it.key];
+      const val = document.getElementById(`val-${it.key}`);
+      if(val) val.textContent = state.scores[it.key];
+    });
+  }
+
+  function bindButtons(){
+    $("#btnRender").addEventListener("click", ()=>{
+      if(!state.hpName.trim()){
+        toast("先輸入耳機型號再更新圖表～");
+        $("#hpName").focus();
+        return;
+      }
+      drawRadar();
+      toast("圖表已更新");
+    });
+
+    $("#btnDownload").addEventListener("click", ()=>{
+      if(!state.hpName.trim()){
+        toast("先輸入耳機型號再下載～");
+        $("#hpName").focus();
+        return;
+      }
+      drawRadar();
+      const canvas = $("#radar");
+      canvas.toBlob((blob)=>{
+        const fname = `${safeFileName(state.hpName)}_黃金六角_${state.testDate || todayISO()}.png`;
+        downloadBlob(fname, blob);
+        toast("已下載 PNG 圖片");
+      }, "image/png");
+    });
+
+    $("#btnCopyLink").addEventListener("click", async ()=>{
+      if(!state.hpName.trim()){
+        toast("先輸入耳機型號再分享～");
+        $("#hpName").focus();
+        return;
+      }
+      const url = writeToURL();
+      try{
+        await navigator.clipboard.writeText(url);
+        toast("分享連結已複製");
+      }catch(e){
+        prompt("複製這個連結：", url);
+      }
+    });
+
+    $("#btnExport").addEventListener("click", ()=>{
+      const data = packData();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], {type:"application/json;charset=utf-8"});
+      const fname = `${safeFileName(state.hpName || "耳機")}_黃金六角_${state.testDate || todayISO()}.json`;
+      downloadBlob(fname, blob);
+      toast("已下載 JSON 評測檔");
+    });
+
+    $("#btnImport").addEventListener("click", ()=> $("#importFile").click());
+
+    $("#importFile").addEventListener("change", async (e)=>{
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      try{
+        const text = await file.text();
+        const obj = JSON.parse(text);
+        if(!obj || !obj.scores){
+          toast("檔案格式不對（缺少 scores）");
+          return;
+        }
+        state.hpName = String(obj.hpName||"");
+        state.testDate = String(obj.testDate||todayISO());
+        state.oneLiner = String(obj.oneLiner||"");
+        for(const k of Object.keys(state.scores)){
+          const v = Number(obj.scores[k]);
+          if(Number.isFinite(v)) state.scores[k] = clamp(v,1,10);
+        }
+        syncUIFromState();
+        saveLocal();
+        writeToURL();
+        drawRadar();
+        toast("匯入成功");
+      } catch(err){
+        toast("匯入失敗：檔案不是有效 JSON");
+      } finally {
+        e.target.value = "";
+      }
+    });
+
+    $("#btnReset").addEventListener("click", ()=>{
+      if(!confirm("確定要清空嗎？")) return;
+      state.hpName = "";
+      state.testDate = todayISO();
+      state.oneLiner = "";
+      for(const k of Object.keys(state.scores)) state.scores[k] = 7;
+      localStorage.removeItem(LS_KEY);
+      const url = new URL(location.href);
+      url.searchParams.delete("d");
+      history.replaceState(null,"", url.toString());
+      syncUIFromState();
+      drawRadar();
+      toast("已清空");
+    });
+  }
+
+  (function init(){
+
+    state.testDate = todayISO();
+
+    const fromURL = readFromURL();
+    if(!fromURL) loadLocal();
+    if(!state.testDate) state.testDate = todayISO();
+
+    renderItems();
+    bindBasicFields();
+    bindButtons();
+    syncUIFromState();
+    drawRadar();
+  })();
+</script>
+</body>
+</html>
